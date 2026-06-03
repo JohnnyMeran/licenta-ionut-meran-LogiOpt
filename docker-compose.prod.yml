@@ -1,0 +1,33 @@
+services:
+  logiopt-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: logiopt-backend
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JAVA_OPTS: "-Xms256m -Xmx768m"
+    ports:
+      - "127.0.0.1:8090:8080"
+    networks:
+      - logiopt-network
+
+  logiopt-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+    container_name: logiopt-frontend
+    restart: unless-stopped
+    depends_on:
+      - logiopt-backend
+    ports:
+      - "127.0.0.1:3010:80"
+    networks:
+      - logiopt-network
+
+networks:
+  logiopt-network:
+    name: logiopt-network

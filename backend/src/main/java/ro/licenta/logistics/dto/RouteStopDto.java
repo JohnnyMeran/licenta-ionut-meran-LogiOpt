@@ -1,15 +1,15 @@
 package ro.licenta.logistics.dto;
 
+// stopType: "PICKUP" (ridicare colet), "DELIVERY" (livrare colet), "HUB" (nod hub linehaul).
 public record RouteStopDto(
-    Long orderId,
+    Long shipmentId,
     int sequence,
-    String customerName,
+    String name,
     String address,
+    String city,
     double latitude,
     double longitude,
     String priority,
-    String requiredProduct,
     String timeWindow,
-    String stopType,
-    String depotId
+    String stopType
 ) {}

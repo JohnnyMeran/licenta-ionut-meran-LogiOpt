@@ -10,5 +10,6 @@ public record StatisticsDto(
     double initialFuelLiters, double optimizedFuelLiters, double hypotheticalFuelLiters,
     double fuelSavedLiters, double hypotheticalFuelSavedLiters,
     double initialCostRon, double optimizedCostRon, double hypotheticalCostRon,
-    double costSavedRon, double hypotheticalCostSavedRon
+    double costSavedRon, double hypotheticalCostSavedRon,
+    double totalRevenueRon, double baselineProfitRon, double optimizedProfitRon, double moneySavedByLogiOptRon
 ) {}

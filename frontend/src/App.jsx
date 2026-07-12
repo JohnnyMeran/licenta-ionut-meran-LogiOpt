@@ -1,29 +1,30 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   BarChart3,
-  ClipboardList,
-  Gauge,
+  Boxes,
   LayoutDashboard,
-  PlayCircle,
+  Moon,
   RefreshCw,
   Settings,
+  Sun,
   Truck,
   Users,
 } from 'lucide-react';
 
 import { API } from './config/api';
+import { applyTheme, initialTheme } from './config/theme';
 import Dashboard from './pages/Dashboard';
 import DriversPage from './pages/DriversPage';
-import OrdersPage from './pages/OrdersPage';
+import ShipmentsPage from './pages/ShipmentsPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 import VehiclesPage from './pages/VehiclesPage';
 
 const PAGES = [
-  ['dashboard', LayoutDashboard, 'Dashboard'],
-  ['orders', ClipboardList, 'Comenzi'],
+  ['dashboard', LayoutDashboard, 'Panou'],
+  ['shipments', Boxes, 'Colete'],
   ['drivers', Users, 'Șoferi'],
-  ['vehicles', Truck, 'Camioane'],
+  ['vehicles', Truck, 'Flotă'],
   ['reports', BarChart3, 'Rapoarte'],
   ['settings', Settings, 'Setări'],
 ];
@@ -35,6 +36,23 @@ export default function App() {
   const [routeMode, setRouteMode] = useState('solved');
   const [activePage, setActivePage] = useState('dashboard');
   const [error, setError] = useState('');
+  // Tema implicită rămâne cea închisă; cea deschisă există pentru tipar (capturile din lucrare).
+  const [theme, setTheme] = useState(initialTheme);
+  const [optimizationHistory, setOptimizationHistory] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('logioptOptimizationHistory') || '[]');
+    } catch {
+      return [];
+    }
+  });
+  const [liveOptimization, setLiveOptimization] = useState({
+    status: 'IDLE',
+    mode: 'real',
+    iteration: 0,
+    bestDistanceKm: 0,
+    bestCostRon: 0,
+    bestDurationMinutes: 0,
+  });
 
   const loadScenario = async (reset = false) => {
     setLoading(true);
@@ -56,9 +74,10 @@ export default function App() {
 
       setScenario(data);
       setSelectedRoute('ALL');
+      setRouteMode('initial');
     } catch {
       setError(
-        'Nu pot încărca datele demo. Verifică dacă backend-ul rulează pe portul 8080.'
+        'Nu pot încărca datele demo. Verifică dacă backend-ul rulează pe portul 8090.'
       );
     } finally {
       setLoading(false);
@@ -87,6 +106,7 @@ export default function App() {
       setSelectedRoute('ALL');
       setRouteMode(hypothetical ? 'hypothetical' : 'solved');
       setActivePage('dashboard');
+      recordOptimization(data, hypothetical ? 'Ipotetic' : 'Real');
     } catch {
       setError(
         'Optimizarea nu a pornit. Verifică backend-ul Spring Boot și dependențele Maven.'
@@ -119,6 +139,10 @@ export default function App() {
 
       setScenario(data);
       setSelectedRoute('ALL');
+      // Endpoint-urile CRUD întorc scenariul NEoptimizat (backend-ul nu rulează solverul la fiecare modificare).
+      // Fără resetarea modului, planul inițial ar rămâne etichetat „soluție reală OptaPlanner" după ce ștergi
+      // un colet sau salvezi setările — adică ai citi baseline-ul crezând că e rezultatul optimizării.
+      setRouteMode('initial');
     } catch {
       setError('Operația CRUD a eșuat. Verifică backend-ul.');
     } finally {
@@ -126,9 +150,106 @@ export default function App() {
     }
   };
 
+  const recordOptimization = (data, mode) => {
+    if (!data?.statistics) return;
+
+    const realRoutes = data.routes || [];
+    const hypotheticalRoutes = data.hypotheticalRoutes || [];
+    const usedRealRoutes = realRoutes.filter((route) =>
+      route.stops?.some((stop) => stop.stopType === 'DELIVERY')
+    ).length;
+    const usedHypotheticalRoutes = hypotheticalRoutes.filter((route) =>
+      route.stops?.some((stop) => stop.stopType === 'DELIVERY')
+    ).length;
+
+    setOptimizationHistory((previous) => {
+      const next = [
+        {
+          id: `${Date.now()}-${mode}`,
+          date: new Date().toISOString(),
+          mode,
+          orderCount: data.shipments?.length || 0,
+          usedRealRoutes,
+          usedHypotheticalRoutes,
+          statistics: data.statistics,
+        },
+        ...previous,
+      ].slice(0, 50);
+
+      localStorage.setItem('logioptOptimizationHistory', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const applyLiveStatus = (data) => {
+    setLiveOptimization({
+      status: data.status,
+      mode: data.mode,
+      iteration: data.iteration,
+      bestDistanceKm: data.bestDistanceKm,
+      bestCostRon: data.bestCostRon,
+      bestDurationMinutes: data.bestDurationMinutes,
+    });
+
+    if (data.scenario) {
+      setScenario(data.scenario);
+      setRouteMode(data.mode === 'hypothetical' ? 'hypothetical' : 'solved');
+      // Fără setActivePage: statusul live se citește la fiecare 1,5s, iar navigarea forțată pe Panou la fiecare
+      // sondaj făcea Coletele/Flota/Rapoartele imposibil de folosit cât timp rulează solverul.
+      if (data.status === 'STOPPED') {
+        recordOptimization(
+          data.scenario,
+          data.mode === 'hypothetical' ? 'Live ipotetic' : 'Live real'
+        );
+      }
+    }
+  };
+
+  const liveAction = async (action, hypothetical = false) => {
+    setError('');
+
+    try {
+      const suffix =
+        action === 'start'
+          ? `/optimize/live/start?hypothetical=${hypothetical}`
+          : `/optimize/live/${action}`;
+      const res = await fetch(`${API}${suffix}`, {
+        method: 'POST',
+      });
+
+      if (!res.ok) {
+        throw new Error();
+      }
+
+      if (action === 'start') setActivePage('dashboard'); // o singură dată, la pornire — nu la fiecare sondaj
+      applyLiveStatus(await res.json());
+    } catch {
+      setError('Optimizarea live nu a pornit. Verifică backend-ul.');
+    }
+  };
+
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
+
   useEffect(() => {
     loadScenario();
   }, []);
+
+  useEffect(() => {
+    if (liveOptimization.status !== 'RUNNING') return undefined;
+
+    const timer = window.setInterval(async () => {
+      try {
+        const res = await fetch(`${API}/optimize/live/status`);
+        if (res.ok) applyLiveStatus(await res.json());
+      } catch {
+        setError('Nu pot citi statusul optimizării live.');
+      }
+    }, 1500);
+
+    return () => window.clearInterval(timer);
+  }, [liveOptimization.status]);
 
   const stats = scenario?.statistics || {};
 
@@ -167,7 +288,7 @@ export default function App() {
 
           <div>
             <h1>LogiOpt</h1>
-            <span>simulator rute logistice</span>
+            <span>rețea națională de curierat</span>
           </div>
         </div>
 
@@ -176,14 +297,9 @@ export default function App() {
           Resetează datele demo
         </button>
 
-        <button className="primary" onClick={() => optimize(false)}>
-          <PlayCircle size={18} />
-          Rezolvă
-        </button>
-
-        <button className="primary alt" onClick={() => optimize(true)}>
-          <Gauge size={18} />
-          Rezolvă varianta ipotetică
+        <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          {theme === 'dark' ? 'Temă deschisă (tipar)' : 'Temă închisă'}
         </button>
 
         <nav className="menu-nav">
@@ -203,10 +319,11 @@ export default function App() {
       <section className="content">
         <header>
           <div>
-            <h1>Automatizarea proceselor logistice</h1>
+            <h1>Optimizarea rețelei de curierat</h1>
             <p>
-              Simulare de distribuție cu rute reale, timp de livrare, reguli
-              legale, depozite și stocuri diferite.
+              Ridicare colete → hub de origine → linehaul între orașe → hub
+              destinație → livrare pe ultima milă, pe toată România, optimizat cu
+              OptaPlanner și OSRM.
             </p>
           </div>
 
@@ -224,11 +341,15 @@ export default function App() {
             chartData={chartData}
             routeMode={routeMode}
             setRouteMode={setRouteMode}
+            liveOptimization={liveOptimization}
+            onLiveAction={liveAction}
+            onOptimize={optimize}
+            theme={theme}
           />
         )}
 
-        {activePage === 'orders' && (
-          <OrdersPage scenario={scenario} callApi={callApi} />
+        {activePage === 'shipments' && (
+          <ShipmentsPage scenario={scenario} callApi={callApi} />
         )}
 
         {activePage === 'drivers' && (
@@ -243,7 +364,14 @@ export default function App() {
           />
         )}
 
-        {activePage === 'reports' && <ReportsPage stats={stats} />}
+        {activePage === 'reports' && (
+          <ReportsPage
+            scenario={scenario}
+            stats={stats}
+            history={optimizationHistory}
+            theme={theme}
+          />
+        )}
 
         {activePage === 'settings' && (
           <SettingsPage scenario={scenario} callApi={callApi} />

@@ -3,6 +3,7 @@ package ro.licenta.logistics.controller;
 import org.springframework.web.bind.annotation.*;
 import ro.licenta.logistics.dto.*;
 import ro.licenta.logistics.service.DemoScenarioService;
+import ro.licenta.logistics.service.LiveOptimizationService;
 import ro.licenta.logistics.service.OptimizationService;
 
 @RestController
@@ -11,7 +12,8 @@ import ro.licenta.logistics.service.OptimizationService;
 public class ScenarioController {
     private final OptimizationService service;
     private final DemoScenarioService demo;
-    public ScenarioController(OptimizationService service, DemoScenarioService demo) { this.service = service; this.demo = demo; }
+    private final LiveOptimizationService live;
+    public ScenarioController(OptimizationService service, DemoScenarioService demo, LiveOptimizationService live) { this.service = service; this.demo = demo; this.live = live; }
 
     @GetMapping("/scenario/demo")
     public ScenarioDto demoScenario() { return service.scenario(false); }
@@ -19,11 +21,27 @@ public class ScenarioController {
     @PostMapping("/scenario/reset")
     public ScenarioDto resetScenario() { demo.reset(); return service.scenario(false); }
 
+    // Fiecare scenariu se optimizează separat: butonul din interfață rulează doar planul selectat pe hartă.
     @PostMapping("/optimize")
-    public ScenarioDto optimize() { return service.scenario(true); }
+    public ScenarioDto optimize() { return service.optimize(false); }
 
     @PostMapping("/optimize/hypothetical")
-    public ScenarioDto hypothetical() { return service.scenarioWithHypothetical(); }
+    public ScenarioDto hypothetical() { return service.optimize(true); }
+
+    @PostMapping("/optimize/live/start")
+    public LiveOptimizationStatusDto startLive(@RequestParam(defaultValue = "false") boolean hypothetical) { return live.start(hypothetical); }
+
+    @PostMapping("/optimize/live/pause")
+    public LiveOptimizationStatusDto pauseLive() { return live.pause(); }
+
+    @PostMapping("/optimize/live/resume")
+    public LiveOptimizationStatusDto resumeLive() { return live.resume(); }
+
+    @PostMapping("/optimize/live/stop")
+    public LiveOptimizationStatusDto stopLive() { return live.stop(); }
+
+    @GetMapping("/optimize/live/status")
+    public LiveOptimizationStatusDto liveStatus() { return live.status(); }
 
     @GetMapping("/settings")
     public SettingsDto settings() { return demo.settings(); }
@@ -34,10 +52,17 @@ public class ScenarioController {
         return service.scenario(false);
     }
 
-    @PostMapping("/orders")
-    public ScenarioDto addOrder(@RequestBody OrderDto order) { demo.addOrder(order); return service.scenario(false); }
-    @DeleteMapping("/orders/{id}")
-    public ScenarioDto deleteOrder(@PathVariable long id) { demo.deleteOrder(id); return service.scenario(false); }
+    // Datele invalide sunt refuzate cu 400 și un mesaj citibil, nu cu un 500 opac.
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseStatus(org.springframework.http.HttpStatus.BAD_REQUEST)
+    public java.util.Map<String, String> onInvalidInput(IllegalArgumentException e) {
+        return java.util.Map.of("error", e.getMessage());
+    }
+
+    @PostMapping("/shipments")
+    public ScenarioDto addShipment(@RequestBody ShipmentDto shipment) { demo.addShipment(shipment); return service.scenario(false); }
+    @DeleteMapping("/shipments/{id}")
+    public ScenarioDto deleteShipment(@PathVariable long id) { demo.deleteShipment(id); return service.scenario(false); }
 
     @PostMapping("/drivers")
     public ScenarioDto addDriver(@RequestBody DriverDto driver) { demo.addDriver(driver); return service.scenario(false); }

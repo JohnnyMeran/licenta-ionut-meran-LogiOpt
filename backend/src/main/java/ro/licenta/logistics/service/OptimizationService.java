@@ -45,7 +45,10 @@ public class OptimizationService {
     private static final double DRIVER_ROTATION_FACTOR = 1.25;
 
     private final DemoScenarioService demo;
-    public OptimizationService(DemoScenarioService demo) { this.demo = demo; }
+
+    public OptimizationService(DemoScenarioService demo) {
+        this.demo = demo;
+    }
 
     // Planurile rezolvate se păstrează între cereri, ca fiecare scenariu să poată fi optimizat SEPARAT: apeși
     // „Optimizează" pe tabul Real → se rezolvă doar realul, iar ipoteticul rămâne cel calculat anterior (sau gol).
@@ -101,7 +104,8 @@ public class OptimizationService {
 
         List<RouteDto> renamed = new ArrayList<>();
         int index = 1;
-        for (RouteDto route : routesFromSolution(solved, hubs, settings)) renamed.add(renameHypotheticalRoute(route, index++));
+        for (RouteDto route : routesFromSolution(solved, hubs, settings))
+            renamed.add(renameHypotheticalRoute(route, index++));
         return renamed;
     }
 
@@ -163,6 +167,7 @@ public class OptimizationService {
         return DemoScenarioService.VAN_CONSUMPTION / 100.0 * settings.fuelPriceRonPerLiter()
                 + FIXED_OPERATIONAL_COST_RON_PER_KM + VAN_SERVICE_RON_PER_KM;
     }
+
     private double truckCostPerKm(SettingsDto settings) {
         return DemoScenarioService.LINEHAUL_CONSUMPTION / 100.0 * settings.fuelPriceRonPerLiter()
                 + FIXED_OPERATIONAL_COST_RON_PER_KM + LINEHAUL_SERVICE_RON_PER_KM;
@@ -526,7 +531,8 @@ public class OptimizationService {
                     deliveryTimeSum += legMinutes + serviceForStop(stop);
                     deliveries++;
                 }
-                lat = stop.latitude(); lon = stop.longitude();
+                lat = stop.latitude();
+                lon = stop.longitude();
             }
         }
         return deliveries == 0 ? 0 : deliveryTimeSum / deliveries;
@@ -563,7 +569,8 @@ public class OptimizationService {
             driver += (lh ? LINEHAUL_CREW_SIZE : 1) * settings.driverDailySalaryRon();  // cursa interurbană merge cu echipaj dublu
             amort += lh ? settings.truckDailyAmortizationRon() : settings.vanDailyAmortizationRon();
             service += r.distanceKm() * (lh ? LINEHAUL_SERVICE_RON_PER_KM : VAN_SERVICE_RON_PER_KM);
-            if (lh) trucks++; else vans++;
+            if (lh) trucks++;
+            else vans++;
         }
         // Vehiculele deținute, dar rămase în curte, se depreciază în continuare. Optimizarea rutelor nu atinge
         // acest cost — el scade doar dacă flota este redimensionată (vezi fleetRecommendation).
@@ -681,7 +688,8 @@ public class OptimizationService {
 
     // Datele brute per hub, înainte de repartizarea rezervei.
     private record HubPlan(String city, int owned, int used, int required, int byCapacity, int byWorkTime,
-                           double loadKg, double capacityKg, double utilization) {}
+                           double loadKg, double capacityKg, double utilization) {
+    }
 
     // Repartizează rezerva de flotă pe hub-uri prin metoda celui mai mare rest, astfel încât suma coloanei
     // "recomandat" din tabel să fie exact numărul recomandat pe total — altfel raportul s-ar contrazice singur.
@@ -814,7 +822,9 @@ public class OptimizationService {
         return reasons;
     }
 
-    private String money(double value) { return String.format("%,.0f", value).replace(',', '.'); }
+    private String money(double value) {
+        return String.format("%,.0f", value).replace(',', '.');
+    }
 
     // ---------- Helpers ----------
 
@@ -829,22 +839,42 @@ public class OptimizationService {
         return new RouteDto("IPOTETIC-" + suffix, "Șofer ipotetic " + index, route.depot(), route.kind(), route.loadKg(), route.peakLoadKg(), route.capacityKg(), route.distanceKm(), route.drivingMinutes(), route.serviceMinutes(), route.breakMinutes(), route.durationMinutes(), route.legalMaxDriveMinutes(), route.dailyRestMinutes(), route.fuelLiters(), route.costRon(), route.stops());
     }
 
-    private int legalBreakMinutes(int driving, int after, int duration) { return driving <= after ? 0 : ((driving - 1) / after) * duration; }
+    private int legalBreakMinutes(int driving, int after, int duration) {
+        return driving <= after ? 0 : ((driving - 1) / after) * duration;
+    }
 
     private double routeDistanceWithStops(DepotDto startHub, List<RouteStopDto> stops) {
         double total = 0, lat = startHub.latitude(), lon = startHub.longitude();
         for (RouteStopDto stop : stops) {
             total += VehicleRoutingEasyScoreCalculator.haversine(lat, lon, stop.latitude(), stop.longitude());
-            lat = stop.latitude(); lon = stop.longitude();
+            lat = stop.latitude();
+            lon = stop.longitude();
         }
         total += VehicleRoutingEasyScoreCalculator.haversine(lat, lon, startHub.latitude(), startHub.longitude());
         return total;
     }
 
-    private double sumDistance(List<RouteDto> r) { return r.stream().mapToDouble(RouteDto::distanceKm).sum(); }
-    private int sumDuration(List<RouteDto> r) { return r.stream().mapToInt(RouteDto::durationMinutes).sum(); }
-    private double sumFuel(List<RouteDto> r) { return r.stream().mapToDouble(RouteDto::fuelLiters).sum(); }
-    private double sumCost(List<RouteDto> r) { return r.stream().mapToDouble(RouteDto::costRon).sum(); }
-    private double pct(double initial, double current) { return round(initial == 0 ? 0 : ((initial - current) / initial) * 100); }
-    private double round(double v) { return Math.round(v * 100.0) / 100.0; }
+    private double sumDistance(List<RouteDto> r) {
+        return r.stream().mapToDouble(RouteDto::distanceKm).sum();
+    }
+
+    private int sumDuration(List<RouteDto> r) {
+        return r.stream().mapToInt(RouteDto::durationMinutes).sum();
+    }
+
+    private double sumFuel(List<RouteDto> r) {
+        return r.stream().mapToDouble(RouteDto::fuelLiters).sum();
+    }
+
+    private double sumCost(List<RouteDto> r) {
+        return r.stream().mapToDouble(RouteDto::costRon).sum();
+    }
+
+    private double pct(double initial, double current) {
+        return round(initial == 0 ? 0 : ((initial - current) / initial) * 100);
+    }
+
+    private double round(double v) {
+        return Math.round(v * 100.0) / 100.0;
+    }
 }

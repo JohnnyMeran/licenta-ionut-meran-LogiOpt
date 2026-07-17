@@ -5,25 +5,26 @@ package ro.licenta.logistics.dto;
 // code = codul de identificare al coletului (LO1000001, LO1000002, ...). Firma nu procesează scrisori
 // de transport aerian: codul servește exclusiv la regăsirea coletului în listă.
 public record ShipmentDto(
-    Long id,
-    String code,
-    String senderName,
-    String recipientName,
-    String pickupAddress,
-    String pickupCity,
-    double pickupLat,
-    double pickupLon,
-    String originHubId,
-    String deliveryAddress,
-    String deliveryCity,
-    double deliveryLat,
-    double deliveryLon,
-    String destHubId,
-    double weightKg,
-    String timeWindow,
-    int windowStartMinute,
-    int windowEndMinute,
-    int serviceMinutes,
-    String priority,
-    double tariffRon
-) {}
+        Long id,
+        String code,
+        String senderName,
+        String recipientName,
+        String pickupAddress,
+        String pickupCity,
+        double pickupLat,
+        double pickupLon,
+        String originHubId,
+        String deliveryAddress,
+        String deliveryCity,
+        double deliveryLat,
+        double deliveryLon,
+        String destHubId,
+        double weightKg,
+        String timeWindow,
+        int windowStartMinute,
+        int windowEndMinute,
+        int serviceMinutes,
+        String priority,
+        double tariffRon
+) {
+}

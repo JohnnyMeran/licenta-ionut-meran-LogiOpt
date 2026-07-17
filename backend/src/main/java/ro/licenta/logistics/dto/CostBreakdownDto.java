@@ -7,16 +7,17 @@ package ro.licenta.logistics.dto;
 // depreciază chiar dacă rămâne în curte. Singurul mod de a scăpa de ea este redimensionarea flotei —
 // de aceea totalWithIdleRon (costul real de proprietate) este mai mare decât totalRon (costul rulării).
 public record CostBreakdownDto(
-    double fuelRon,
-    double driverRon,
-    double amortizationRon,
-    double idleAmortizationRon,
-    double serviceRon,
-    double operationalRon,
-    double totalRon,
-    double totalWithIdleRon,
-    int vansUsed,
-    int trucksUsed,
-    int vansIdle,
-    int trucksIdle
-) {}
+        double fuelRon,
+        double driverRon,
+        double amortizationRon,
+        double idleAmortizationRon,
+        double serviceRon,
+        double operationalRon,
+        double totalRon,
+        double totalWithIdleRon,
+        int vansUsed,
+        int trucksUsed,
+        int vansIdle,
+        int trucksIdle
+) {
+}

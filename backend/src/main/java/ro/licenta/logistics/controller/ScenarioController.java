@@ -13,38 +13,64 @@ public class ScenarioController {
     private final OptimizationService service;
     private final DemoScenarioService demo;
     private final LiveOptimizationService live;
-    public ScenarioController(OptimizationService service, DemoScenarioService demo, LiveOptimizationService live) { this.service = service; this.demo = demo; this.live = live; }
+
+    public ScenarioController(OptimizationService service, DemoScenarioService demo, LiveOptimizationService live) {
+        this.service = service;
+        this.demo = demo;
+        this.live = live;
+    }
 
     @GetMapping("/scenario/demo")
-    public ScenarioDto demoScenario() { return service.scenario(false); }
+    public ScenarioDto demoScenario() {
+        return service.scenario(false);
+    }
 
     @PostMapping("/scenario/reset")
-    public ScenarioDto resetScenario() { demo.reset(); return service.scenario(false); }
+    public ScenarioDto resetScenario() {
+        demo.reset();
+        return service.scenario(false);
+    }
 
     // Fiecare scenariu se optimizează separat: butonul din interfață rulează doar planul selectat pe hartă.
     @PostMapping("/optimize")
-    public ScenarioDto optimize() { return service.optimize(false); }
+    public ScenarioDto optimize() {
+        return service.optimize(false);
+    }
 
     @PostMapping("/optimize/hypothetical")
-    public ScenarioDto hypothetical() { return service.optimize(true); }
+    public ScenarioDto hypothetical() {
+        return service.optimize(true);
+    }
 
     @PostMapping("/optimize/live/start")
-    public LiveOptimizationStatusDto startLive(@RequestParam(defaultValue = "false") boolean hypothetical) { return live.start(hypothetical); }
+    public LiveOptimizationStatusDto startLive(@RequestParam(defaultValue = "false") boolean hypothetical) {
+        return live.start(hypothetical);
+    }
 
     @PostMapping("/optimize/live/pause")
-    public LiveOptimizationStatusDto pauseLive() { return live.pause(); }
+    public LiveOptimizationStatusDto pauseLive() {
+        return live.pause();
+    }
 
     @PostMapping("/optimize/live/resume")
-    public LiveOptimizationStatusDto resumeLive() { return live.resume(); }
+    public LiveOptimizationStatusDto resumeLive() {
+        return live.resume();
+    }
 
     @PostMapping("/optimize/live/stop")
-    public LiveOptimizationStatusDto stopLive() { return live.stop(); }
+    public LiveOptimizationStatusDto stopLive() {
+        return live.stop();
+    }
 
     @GetMapping("/optimize/live/status")
-    public LiveOptimizationStatusDto liveStatus() { return live.status(); }
+    public LiveOptimizationStatusDto liveStatus() {
+        return live.status();
+    }
 
     @GetMapping("/settings")
-    public SettingsDto settings() { return demo.settings(); }
+    public SettingsDto settings() {
+        return demo.settings();
+    }
 
     @PutMapping("/settings")
     public ScenarioDto updateSettings(@RequestBody SettingsDto settings) {
@@ -60,17 +86,38 @@ public class ScenarioController {
     }
 
     @PostMapping("/shipments")
-    public ScenarioDto addShipment(@RequestBody ShipmentDto shipment) { demo.addShipment(shipment); return service.scenario(false); }
+    public ScenarioDto addShipment(@RequestBody ShipmentDto shipment) {
+        demo.addShipment(shipment);
+        return service.scenario(false);
+    }
+
     @DeleteMapping("/shipments/{id}")
-    public ScenarioDto deleteShipment(@PathVariable long id) { demo.deleteShipment(id); return service.scenario(false); }
+    public ScenarioDto deleteShipment(@PathVariable long id) {
+        demo.deleteShipment(id);
+        return service.scenario(false);
+    }
 
     @PostMapping("/drivers")
-    public ScenarioDto addDriver(@RequestBody DriverDto driver) { demo.addDriver(driver); return service.scenario(false); }
+    public ScenarioDto addDriver(@RequestBody DriverDto driver) {
+        demo.addDriver(driver);
+        return service.scenario(false);
+    }
+
     @DeleteMapping("/drivers/{id}")
-    public ScenarioDto deleteDriver(@PathVariable String id) { demo.deleteDriver(id); return service.scenario(false); }
+    public ScenarioDto deleteDriver(@PathVariable String id) {
+        demo.deleteDriver(id);
+        return service.scenario(false);
+    }
 
     @PostMapping("/vehicles")
-    public ScenarioDto addVehicle(@RequestBody VehicleDto vehicle) { demo.addVehicle(vehicle); return service.scenario(false); }
+    public ScenarioDto addVehicle(@RequestBody VehicleDto vehicle) {
+        demo.addVehicle(vehicle);
+        return service.scenario(false);
+    }
+
     @DeleteMapping("/vehicles/{code}")
-    public ScenarioDto deleteVehicle(@PathVariable String code) { demo.deleteVehicle(code); return service.scenario(false); }
+    public ScenarioDto deleteVehicle(@PathVariable String code) {
+        demo.deleteVehicle(code);
+        return service.scenario(false);
+    }
 }

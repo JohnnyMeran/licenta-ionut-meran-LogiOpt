@@ -23,9 +23,7 @@ public class VehicleRoutingEasyScoreCalculator implements EasyScoreCalculator<Ve
     public HardSoftScore calculateScore(VehicleRoutingSolution solution) {
         int hard = 0;
         int soft = 0;
-        // Indexul de succesori se construiește o singură dată per evaluare: fără el, extractChain
-        // rescanează întreaga listă de vizite la fiecare pas (O(n²) per scor), iar euristica
-        // constructivă nu apucă să inițializeze toate vizitele în bugetul de timp alocat.
+
         Map<Standstill, DeliveryVisit> successors = successorIndex(solution.getVisitList());
         for (TruckAnchor truck : solution.getTruckList()) {
             List<DeliveryVisit> chain = extractChain(truck, successors);
@@ -41,10 +39,12 @@ public class VehicleRoutingEasyScoreCalculator implements EasyScoreCalculator<Ve
             // (nu o preferință), depășirea ei este penalizată hard.
             double peakLoad = peakLoad(chain);
             if (peakLoad > truck.getCapacityKg()) hard -= (int) Math.round((peakLoad - truck.getCapacityKg()) * 100);
+
             // Un colet nu poate fi livrat înainte de a fi ridicat. Se aplică doar când ambele operațiuni cad pe
             // aceeași dubă (coletele locale, expediate și livrate în raza aceluiași hub); dacă sunt pe dube diferite,
             // coletul trece prin hub și ordinea între rute nu contează.
             hard -= precedenceViolations(chain) * 50_000;
+
             double distance = routeDistance(truck, chain);
             int driving = minutesFor(distance, truck.getSpeedKmh());
             if (driving > truck.getMaxDriveMinutes()) hard -= (driving - truck.getMaxDriveMinutes()) * 1000;
@@ -66,14 +66,8 @@ public class VehicleRoutingEasyScoreCalculator implements EasyScoreCalculator<Ve
         return HardSoftScore.of(hard, soft);
     }
 
-    // Încărcătura reală aflată în vehicul, urmărită de-a lungul traseului: vehiculul pleacă din hub cu toate
-    // coletele de livrat, le lasă pe rând și ridică altele. Vârful acestei curbe este singura valoare care are
-    // sens comparată cu capacitatea. Sursă unică de adevăr: o folosesc și scorul solverului, și raportarea
-    // (OptimizationService), ca cele două să nu poată ajunge să spună lucruri diferite.
+
     public static double peakLoad(List<DeliveryVisit> chain) {
-        // Un colet ridicat CHIAR DE ACEASTĂ dubă nu se află în ea la plecarea din hub — urcă abia la ridicare.
-        // Fără excepția asta, coletele locale (același hub la expediere și la livrare) ar fi numărate de două ori:
-        // o dată în încărcătura inițială și încă o dată la ridicare.
         Set<Long> pickedUpOnThisRoute = new HashSet<>();
         for (DeliveryVisit visit : chain) {
             if ("PICKUP".equals(visit.getTaskType()) && visit.getShipmentId() != null) {
@@ -114,11 +108,6 @@ public class VehicleRoutingEasyScoreCalculator implements EasyScoreCalculator<Ve
             if (delivery != null && delivery < entry.getValue()) violations++;
         }
         return violations;
-    }
-
-    public static int legalBreakMinutes(int drivingMinutes, int breakAfterMinutes, int breakDurationMinutes) {
-        if (breakAfterMinutes <= 0 || drivingMinutes <= breakAfterMinutes) return 0;
-        return ((drivingMinutes - 1) / breakAfterMinutes) * breakDurationMinutes;
     }
 
     public static int deliveryCompletionPenalty(TruckAnchor truck, List<DeliveryVisit> chain) {
@@ -207,10 +196,6 @@ public class VehicleRoutingEasyScoreCalculator implements EasyScoreCalculator<Ve
 
     public static double roadKm(double lat1, double lon1, double lat2, double lon2) {
         return haversine(lat1, lon1, lat2, lon2) * ROAD_FACTOR;
-    }
-
-    public static int drivingMinutes(double km) {
-        return (int) Math.round((km / 28.0) * 60);
     }
 
     public static int minutesFor(double km, double kmh) {

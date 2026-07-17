@@ -25,11 +25,8 @@ public class LiveOptimizationService {
     private String status = "IDLE";
     private String mode = "real";
     private int iteration = 0;
-    // Generația rulării curente. `stop()` doar cere solverului să se oprească, dar firul de execuție este încă
-    // în mijlocul unui solve(); dacă între timp se pornește o rulare nouă (de exemplu în modul ipotetic), bucla
-    // veche s-ar trezi și ar scrie soluția ei peste cea nouă — interfața ar afișa „ipotetic" servind de fapt
-    // rutele calculate pe flota reală. Orice rezultat dintr-o generație depășită este ignorat.
-    private volatile int generation = 0;   // citit și din firul solverului, în afara lock-ului
+
+    private volatile int generation = 0;
 
     public LiveOptimizationService(DemoScenarioService demo, OptimizationService optimizationService) {
         this.demo = demo;

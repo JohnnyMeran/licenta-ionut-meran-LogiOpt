@@ -78,22 +78,20 @@ public class DemoScenarioService {
     private final List<DriverDto> drivers = new ArrayList<>();
     private final List<VehicleDto> vehicles = new ArrayList<>();
     private final List<ShipmentDto> shipments = new ArrayList<>();
-    // Prețuri de achiziție orientative pe piața din România (dubă 3,5t vs. cap tractor + semiremorcă),
-    // amortizate liniar pe 8 ani, cu 20% valoare reziduală, peste 260 de zile lucrătoare pe an.
+
     private static final double DEFAULT_VAN_PRICE_RON = 180_000;
     private static final double DEFAULT_TRUCK_PRICE_RON = 420_000;
     private static final int DEFAULT_USEFUL_LIFE_YEARS = 8;
     private static final double DEFAULT_RESIDUAL_PERCENT = 20;
     private static final int DEFAULT_WORKING_DAYS_PER_YEAR = 260;
-    // Rezervă de flotă: vehicule în plus față de minimul strict, pentru service, defecțiuni și vârfuri sezoniere.
+
     private static final double DEFAULT_FLEET_RESERVE_PERCENT = 15;
 
     private SettingsDto settings = new SettingsDto(20, 15, 7.45, 300.0,
             DEFAULT_VAN_PRICE_RON, DEFAULT_TRUCK_PRICE_RON, DEFAULT_USEFUL_LIFE_YEARS,
             DEFAULT_RESIDUAL_PERCENT, DEFAULT_WORKING_DAYS_PER_YEAR, DEFAULT_FLEET_RESERVE_PERCENT);
 
-    // Se incrementează la orice modificare a datelor (colete, flotă, șoferi, setări). Planurile deja rezolvate
-    // sunt păstrate în cache și rămân valabile doar cât timp versiunea nu s-a schimbat.
+
     private int version = 0;
 
     public synchronized int version() {
@@ -354,10 +352,7 @@ public class DemoScenarioService {
         return Math.round(base * 100.0) / 100.0;
     }
 
-    // Rapoarte estimative pentru ultimele 6 luni (demo). Costurile baseline/optimizat sunt strict operaționale
-    // (combustibil, șoferi, service, taxe de drum). Amortizarea flotei este o linie separată, fixă: nu depinde de
-    // cât de bine sunt planificate rutele, ci de câte vehicule deține compania — de aceea profitul real apare
-    // abia după ce este scăzută.
+
     public synchronized List<MonthlyReportDto> monthlyReports() {
         List<MonthlyReportDto> reports = new ArrayList<>();
         double workingDaysPerMonth = settings.workingDaysPerYear() / 12.0;
